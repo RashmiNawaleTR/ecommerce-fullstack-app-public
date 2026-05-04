@@ -1,0 +1,157 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Login & Cart Test</title>
+    <style>
+        body { font-family: Arial; padding: 20px; max-width: 800px; margin: 0 auto; }
+        .section { margin: 20px 0; padding: 15px; border: 1px solid #ddd; border-radius: 5px; }
+        button { padding: 10px 20px; margin: 5px; background: #3f51b5; color: white; border: none; cursor: pointer; border-radius: 4px; }
+        button:hover { background: #303f9f; }
+        input { padding: 8px; margin: 5px; width: 200px; }
+        .status { padding: 10px; margin: 10px 0; border-radius: 4px; }
+        .success { background: #c8e6c9; color: #2e7d32; }
+        .error { background: #ffcdd2; color: #c62828; }
+        .info { background: #e3f2fd; color: #1565c0; }
+        pre { background: #f5f5f5; padding: 10px; overflow-x: auto; }
+    </style>
+</head>
+<body>
+    <h1>🛒 E-Commerce - Login & Cart Test</h1>
+
+    <div class="section">
+        <h2>Step 1: Login</h2>
+        <input type="email" id="email" placeholder="Email" value="customer@test.com" />
+        <input type="password" id="password" placeholder="Password" value="Test123456789!" />
+        <button onclick="login()">Login</button>
+        <div id="loginStatus"></div>
+    </div>
+
+    <div class="section">
+        <h2>Step 2: Add to Cart</h2>
+        <button onclick="addToCart()">Add Product to Cart</button>
+        <div id="cartStatus"></div>
+    </div>
+
+    <div class="section">
+        <h2>Step 3: View Cart</h2>
+        <button onclick="viewCart()">View Cart</button>
+        <div id="viewStatus"></div>
+    </div>
+
+    <script>
+        const API_URL = 'http://localhost:8080/api/v1';
+        let authToken = null;
+
+        function showStatus(elementId, message, type = 'info') {
+            const el = document.getElementById(elementId);
+            el.innerHTML = `<div class="status ${type}">${message}</div>`;
+        }
+
+        async function login() {
+            try {
+                const email = document.getElementById('email').value;
+                const password = document.getElementById('password').value;
+
+                showStatus('loginStatus', 'Logging in...', 'info');
+
+                const response = await fetch(`${API_URL}/auth/login`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ email, password })
+                });
+
+                if (!response.ok) {
+                    const error = await response.text();
+                    throw new Error(`Login failed: ${error}`);
+                }
+
+                const data = await response.json();
+                authToken = data.token;
+                
+                showStatus('loginStatus', 
+                    `✅ Login successful!<br>Token: ${authToken.substring(0, 50)}...<br>User: ${data.email}`, 
+                    'success'
+                );
+            } catch (error) {
+                showStatus('loginStatus', `❌ Error: ${error.message}`, 'error');
+            }
+        }
+
+        async function addToCart() {
+            try {
+                if (!authToken) {
+                    showStatus('cartStatus', '❌ Please login first!', 'error');
+                    return;
+                }
+
+                showStatus('cartStatus', 'Adding product to cart...', 'info');
+
+                const response = await fetch(`${API_URL}/cart/items`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${authToken}`
+                    },
+                    body: JSON.stringify({
+                        productId: 1,
+                        quantity: 1
+                    })
+                });
+
+                if (!response.ok) {
+                    const error = await response.text();
+                    throw new Error(`Add to cart failed: ${response.status} - ${error}`);
+                }
+
+                const cart = await response.json();
+                showStatus('cartStatus', 
+                    `✅ Product added to cart!<br>Cart has ${cart.items.length} item(s)<br>Total: $${cart.total}`, 
+                    'success'
+                );
+            } catch (error) {
+                showStatus('cartStatus', `❌ Error: ${error.message}`, 'error');
+            }
+        }
+
+        async function viewCart() {
+            try {
+                if (!authToken) {
+                    showStatus('viewStatus', '❌ Please login first!', 'error');
+                    return;
+                }
+
+                showStatus('viewStatus', 'Loading cart...', 'info');
+
+                const response = await fetch(`${API_URL}/cart`, {
+                    headers: {
+                        'Authorization': `Bearer ${authToken}`
+                    }
+                });
+
+                if (!response.ok) {
+                    const error = await response.text();
+                    throw new Error(`Get cart failed: ${response.status} - ${error}`);
+                }
+
+                const cart = await response.json();
+                
+                let itemsHtml = '<h3>Cart Items:</h3>';
+                if (cart.items.length === 0) {
+                    itemsHtml += '<p>Cart is empty</p>';
+                } else {
+                    itemsHtml += '<ul>';
+                    cart.items.forEach(item => {
+                        itemsHtml += `<li>${item.product.name} - Qty: ${item.quantity} - $${item.itemTotal}</li>`;
+                    });
+                    itemsHtml += '</ul>';
+                    itemsHtml += `<strong>Total: $${cart.total}</strong>`;
+                }
+
+                showStatus('viewStatus', `✅ ${itemsHtml}`, 'success');
+            } catch (error) {
+                showStatus('viewStatus', `❌ Error: ${error.message}`, 'error');
+            }
+        }
+    </script>
+</body>
+</html>

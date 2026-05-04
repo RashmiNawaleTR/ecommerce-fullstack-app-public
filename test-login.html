@@ -1,0 +1,56 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Test Login</title>
+</head>
+<body>
+    <h1>Test E-Commerce Login</h1>
+
+    <h2>Admin Login</h2>
+    <button onclick="testAdminLogin()">Test Admin Login</button>
+
+    <h2>Customer Login</h2>
+    <button onclick="testCustomerLogin()">Test Customer Login</button>
+
+    <h2>Response:</h2>
+    <pre id="response"></pre>
+
+    <script>
+        async function testAdminLogin() {
+            await testLogin('admin@test.com', 'Test123456789!');
+        }
+
+        async function testCustomerLogin() {
+            await testLogin('customer@test.com', 'Test123456789!');
+        }
+
+        async function testLogin(email, password) {
+            const responseEl = document.getElementById('response');
+            responseEl.textContent = 'Testing login...';
+
+            try {
+                const response = await fetch('http://localhost:8080/api/v1/auth/login', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({ email, password })
+                });
+
+                const data = await response.json();
+
+                if (response.ok) {
+                    responseEl.textContent = 'SUCCESS!\n\n' + JSON.stringify(data, null, 2);
+                    responseEl.style.color = 'green';
+                } else {
+                    responseEl.textContent = 'FAILED!\n\n' + JSON.stringify(data, null, 2);
+                    responseEl.style.color = 'red';
+                }
+            } catch (error) {
+                responseEl.textContent = 'ERROR!\n\n' + error.message + '\n\n' + error.stack;
+                responseEl.style.color = 'red';
+            }
+        }
+    </script>
+</body>
+</html>

@@ -1,0 +1,276 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>E-Commerce - One-Shot Fix</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 800px;
+            margin: 50px auto;
+            padding: 20px;
+            background: #f5f5f5;
+        }
+        .card {
+            background: white;
+            padding: 30px;
+            border-radius: 8px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+            margin-bottom: 20px;
+        }
+        h1 { color: #3f51b5; margin-top: 0; }
+        h2 { color: #1976d2; border-bottom: 2px solid #e0e0e0; padding-bottom: 10px; }
+        button {
+            background: #3f51b5;
+            color: white;
+            border: none;
+            padding: 15px 30px;
+            font-size: 16px;
+            border-radius: 4px;
+            cursor: pointer;
+            margin: 10px 5px;
+            transition: background 0.3s;
+        }
+        button:hover { background: #303f9f; }
+        button.danger { background: #d32f2f; }
+        button.danger:hover { background: #c62828; }
+        button.success { background: #388e3c; }
+        button.success:hover { background: #2e7d32; }
+        .status {
+            padding: 15px;
+            margin: 15px 0;
+            border-radius: 4px;
+            font-weight: bold;
+        }
+        .success { background: #c8e6c9; color: #2e7d32; }
+        .error { background: #ffcdd2; color: #c62828; }
+        .info { background: #e3f2fd; color: #1565c0; }
+        .warning { background: #fff9c4; color: #f57f17; }
+        code {
+            background: #f5f5f5;
+            padding: 2px 6px;
+            border-radius: 3px;
+            font-family: 'Courier New', monospace;
+        }
+        pre {
+            background: #263238;
+            color: #aed581;
+            padding: 15px;
+            border-radius: 4px;
+            overflow-x: auto;
+        }
+        .step {
+            background: #e8f5e9;
+            padding: 15px;
+            margin: 10px 0;
+            border-left: 4px solid #4caf50;
+            border-radius: 4px;
+        }
+        .step h3 { margin-top: 0; color: #2e7d32; }
+    </style>
+</head>
+<body>
+    <div class="card">
+        <h1>🛠️ E-Commerce Cart - ONE-SHOT FIX</h1>
+        <p><strong>This will fix the 403 error in ONE CLICK</strong></p>
+
+        <div class="step">
+            <h3>Step 1: Clear Old Data & Login</h3>
+            <button onclick="fixEverything()" class="success">🔧 FIX EVERYTHING NOW</button>
+        </div>
+
+        <div id="status"></div>
+    </div>
+
+    <div class="card">
+        <h2>📋 What This Does:</h2>
+        <ol>
+            <li>Clears old localStorage data</li>
+            <li>Logs you in with test credentials</li>
+            <li>Stores the access token</li>
+            <li>Loads your cart</li>
+            <li>Opens the main app</li>
+        </ol>
+    </div>
+
+    <div class="card">
+        <h2>🧪 Manual Test (After Fix)</h2>
+        <button onclick="testLogin()">1️⃣ Test Login</button>
+        <button onclick="testCart()">2️⃣ Test Cart Load</button>
+        <button onclick="testAddToCart()">3️⃣ Test Add to Cart</button>
+        <button onclick="openApp()" class="success">🚀 Open App</button>
+        <div id="testStatus"></div>
+    </div>
+
+    <script>
+        const API_URL = 'http://localhost:8080/api/v1';
+        let token = null;
+
+        function showStatus(message, type = 'info') {
+            const el = document.getElementById('status');
+            el.innerHTML = `<div class="status ${type}">${message}</div>`;
+        }
+
+        function showTestStatus(message, type = 'info') {
+            const el = document.getElementById('testStatus');
+            el.innerHTML = `<div class="status ${type}">${message}</div>`;
+        }
+
+        async function fixEverything() {
+            showStatus('🔧 Fixing everything...', 'info');
+
+            try {
+                // Step 1: Clear localStorage
+                console.log('Step 1: Clearing localStorage...');
+                localStorage.clear();
+
+                // Step 2: Login
+                console.log('Step 2: Logging in...');
+                const response = await fetch(`${API_URL}/auth/login`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        email: 'customer@test.com',
+                        password: 'Test123456789!'
+                    })
+                });
+
+                if (!response.ok) {
+                    throw new Error(`Login failed: ${response.status}`);
+                }
+
+                const data = await response.json();
+                token = data.accessToken;
+
+                // Step 3: Store token
+                console.log('Step 3: Storing token...');
+                localStorage.setItem('access_token', token);
+                localStorage.setItem('refresh_token', data.refreshToken);
+                localStorage.setItem('user', JSON.stringify(data.user));
+
+                // Step 4: Load cart
+                console.log('Step 4: Loading cart...');
+                const cartResponse = await fetch(`${API_URL}/cart`, {
+                    headers: { 'Authorization': `Bearer ${token}` }
+                });
+
+                if (!cartResponse.ok) {
+                    throw new Error(`Cart load failed: ${cartResponse.status}`);
+                }
+
+                const cart = await cartResponse.json();
+
+                showStatus(`
+                    ✅ <strong>SUCCESS! Everything is fixed!</strong><br><br>
+                    👤 Logged in as: <strong>${data.user.name}</strong><br>
+                    🛒 Cart has <strong>${cart.items.length}</strong> items<br>
+                    🎟️ Token: <code>${token.substring(0, 30)}...</code><br><br>
+                    <strong>Now open the app and add products to cart!</strong>
+                `, 'success');
+
+                setTimeout(() => {
+                    window.open('http://localhost:4200', '_blank');
+                }, 2000);
+
+            } catch (error) {
+                showStatus(`❌ <strong>Error:</strong> ${error.message}<br><br>Make sure the backend is running on port 8080!`, 'error');
+                console.error('Fix failed:', error);
+            }
+        }
+
+        async function testLogin() {
+            showTestStatus('Testing login...', 'info');
+            try {
+                const response = await fetch(`${API_URL}/auth/login`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        email: 'customer@test.com',
+                        password: 'Test123456789!'
+                    })
+                });
+
+                if (!response.ok) throw new Error(`HTTP ${response.status}`);
+
+                const data = await response.json();
+                token = data.accessToken;
+                localStorage.setItem('access_token', token);
+                localStorage.setItem('user', JSON.stringify(data.user));
+
+                showTestStatus(`✅ Login successful! Token: ${token.substring(0, 40)}...`, 'success');
+            } catch (error) {
+                showTestStatus(`❌ Login failed: ${error.message}`, 'error');
+            }
+        }
+
+        async function testCart() {
+            if (!token) token = localStorage.getItem('access_token');
+            if (!token) {
+                showTestStatus('❌ No token! Run "Test Login" first.', 'error');
+                return;
+            }
+
+            showTestStatus('Testing cart load...', 'info');
+            try {
+                const response = await fetch(`${API_URL}/cart`, {
+                    headers: { 'Authorization': `Bearer ${token}` }
+                });
+
+                if (!response.ok) throw new Error(`HTTP ${response.status}`);
+
+                const cart = await response.json();
+                showTestStatus(`✅ Cart loaded! ${cart.items.length} items, Total: $${cart.total}`, 'success');
+            } catch (error) {
+                showTestStatus(`❌ Cart load failed: ${error.message}`, 'error');
+            }
+        }
+
+        async function testAddToCart() {
+            if (!token) token = localStorage.getItem('access_token');
+            if (!token) {
+                showTestStatus('❌ No token! Run "Test Login" first.', 'error');
+                return;
+            }
+
+            showTestStatus('Testing add to cart...', 'info');
+            try {
+                const response = await fetch(`${API_URL}/cart/items`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${token}`
+                    },
+                    body: JSON.stringify({ productId: 1, quantity: 1 })
+                });
+
+                if (!response.ok) throw new Error(`HTTP ${response.status}`);
+
+                const cart = await response.json();
+                showTestStatus(`✅ Added to cart! Cart now has ${cart.items.length} items, Total: $${cart.total}`, 'success');
+            } catch (error) {
+                showTestStatus(`❌ Add to cart failed: ${error.message}`, 'error');
+            }
+        }
+
+        function openApp() {
+            window.open('http://localhost:4200', '_blank');
+        }
+
+        // Auto-check status on load
+        window.onload = () => {
+            const hasToken = !!localStorage.getItem('access_token');
+            if (hasToken) {
+                showStatus(`
+                    ℹ️ You're already logged in!<br>
+                    Token exists in localStorage.<br><br>
+                    <strong>Go to the app and try adding to cart:</strong>
+                `, 'warning');
+            } else {
+                showStatus(`
+                    ⚠️ Not logged in yet.<br>
+                    Click "FIX EVERYTHING NOW" to login and fix the 403 error.
+                `, 'warning');
+            }
+        };
+    </script>
+</body>
+</html>

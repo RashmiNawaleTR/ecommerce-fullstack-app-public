@@ -1,0 +1,63 @@
+# Backend (Java/Maven)
+backend/target/
+backend/.mvn/
+backend/mvnw
+backend/mvnw.cmd
+*.class
+*.jar
+*.war
+*.ear
+*.log
+*.iml
+.idea/
+.DS_Store
+
+# Frontend (Node/Angular)
+frontend/node_modules/
+frontend/dist/
+frontend/.angular/
+frontend/.cache/
+frontend/npm-debug.log*
+frontend/yarn-debug.log*
+frontend/yarn-error.log*
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Environment files
+.env
+.env.local
+.env.production
+
+# Database
+*.sql.bak
+*.db
+
+# Logs
+logs/
+*.log
+
+# Temporary files
+*.tmp
+*.temp
+.cache/
+
+# Application specific
+uploads/
+screenshots/
+*.pptx
+*.ppt
+
+# Python (for scripts)
+__pycache__/
+*.py[cod]
+*.pyo
+.pytest_cache/

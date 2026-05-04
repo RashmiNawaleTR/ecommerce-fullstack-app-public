@@ -1,0 +1,166 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Cart API Test</title>
+    <style>
+        body { font-family: Arial; padding: 20px; }
+        button { padding: 10px 20px; margin: 5px; cursor: pointer; }
+        #output { margin-top: 20px; padding: 10px; background: #f0f0f0; white-space: pre-wrap; }
+        .success { color: green; }
+        .error { color: red; }
+    </style>
+</head>
+<body>
+    <h1>E-Commerce Cart API Diagnostic</h1>
+
+    <div>
+        <h3>Step 1: Login</h3>
+        <input type="text" id="email" placeholder="Email" value="test@example.com" />
+        <input type="password" id="password" placeholder="Password" value="password123" />
+        <button onclick="login()">Login</button>
+    </div>
+
+    <div>
+        <h3>Step 2: Test Cart Endpoints</h3>
+        <button onclick="getCart()">Get Cart</button>
+        <button onclick="addToCart()">Add Product to Cart</button>
+        <button onclick="getProducts()">Get Products</button>
+    </div>
+
+    <div id="output"></div>
+
+    <script>
+        let token = localStorage.getItem('token');
+        const API_URL = 'http://localhost:8080/api/v1';
+
+        function log(message, type = 'info') {
+            const output = document.getElementById('output');
+            const className = type === 'error' ? 'error' : (type === 'success' ? 'success' : '');
+            output.innerHTML += `<div class="${className}">${new Date().toLocaleTimeString()}: ${message}</div>`;
+        }
+
+        async function login() {
+            try {
+                log('Attempting login...');
+                const email = document.getElementById('email').value;
+                const password = document.getElementById('password').value;
+
+                const response = await fetch(`${API_URL}/auth/login`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ email, password })
+                });
+
+                if (response.ok) {
+                    const data = await response.json();
+                    token = data.token;
+                    localStorage.setItem('token', token);
+                    log(`✓ Login successful! Token: ${token.substring(0, 20)}...`, 'success');
+                } else {
+                    const error = await response.text();
+                    log(`✗ Login failed: ${response.status} - ${error}`, 'error');
+                }
+            } catch (error) {
+                log(`✗ Login error: ${error.message}`, 'error');
+            }
+        }
+
+        async function getCart() {
+            try {
+                log('Getting cart...');
+                if (!token) {
+                    log('✗ No token found. Please login first.', 'error');
+                    return;
+                }
+
+                const response = await fetch(`${API_URL}/cart`, {
+                    headers: { 'Authorization': `Bearer ${token}` }
+                });
+
+                if (response.ok) {
+                    const data = await response.json();
+                    log(`✓ Cart retrieved: ${JSON.stringify(data, null, 2)}`, 'success');
+                } else {
+                    const error = await response.text();
+                    log(`✗ Get cart failed: ${response.status} - ${error}`, 'error');
+                }
+            } catch (error) {
+                log(`✗ Get cart error: ${error.message}`, 'error');
+            }
+        }
+
+        async function getProducts() {
+            try {
+                log('Getting products...');
+                const response = await fetch(`${API_URL}/products?page=1&size=5`);
+
+                if (response.ok) {
+                    const data = await response.json();
+                    log(`✓ Products retrieved: ${data.data?.length || 0} products`, 'success');
+                    if (data.data && data.data.length > 0) {
+                        log(`First product: ID=${data.data[0].id}, Name="${data.data[0].name}"`, 'info');
+                    }
+                } else {
+                    const error = await response.text();
+                    log(`✗ Get products failed: ${response.status} - ${error}`, 'error');
+                }
+            } catch (error) {
+                log(`✗ Get products error: ${error.message}`, 'error');
+            }
+        }
+
+        async function addToCart() {
+            try {
+                log('Adding product to cart...');
+                if (!token) {
+                    log('✗ No token found. Please login first.', 'error');
+                    return;
+                }
+
+                // First get a product ID
+                const productsResponse = await fetch(`${API_URL}/products?page=1&size=1`);
+                if (!productsResponse.ok) {
+                    log('✗ Could not fetch products', 'error');
+                    return;
+                }
+                const productsData = await productsResponse.json();
+                const productId = productsData.data[0]?.id;
+
+                if (!productId) {
+                    log('✗ No products available', 'error');
+                    return;
+                }
+
+                log(`Adding product ID ${productId} to cart...`);
+
+                const response = await fetch(`${API_URL}/cart/items`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${token}`
+                    },
+                    body: JSON.stringify({ productId, quantity: 1 })
+                });
+
+                if (response.ok) {
+                    const data = await response.json();
+                    log(`✓ Added to cart! Cart now has ${data.items?.length || 0} items`, 'success');
+                    log(`Cart details: ${JSON.stringify(data, null, 2)}`, 'success');
+                } else {
+                    const error = await response.text();
+                    log(`✗ Add to cart failed: ${response.status} - ${error}`, 'error');
+                }
+            } catch (error) {
+                log(`✗ Add to cart error: ${error.message}`, 'error');
+            }
+        }
+
+        // Check for existing token on load
+        if (token) {
+            log(`Found existing token: ${token.substring(0, 20)}...`, 'info');
+        } else {
+            log('No token found. Please login first.', 'info');
+        }
+    </script>
+</body>
+</html>

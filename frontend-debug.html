@@ -1,0 +1,184 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>E-Commerce Debug Test</title>
+    <style>
+        body { font-family: Arial, sans-serif; padding: 20px; }
+        .test { margin: 20px 0; padding: 15px; border: 1px solid #ccc; }
+        .success { background: #d4edda; border-color: #c3e6cb; }
+        .error { background: #f8d7da; border-color: #f5c6cb; }
+        button { padding: 10px 20px; margin: 5px; cursor: pointer; }
+        pre { background: #f4f4f4; padding: 10px; overflow-x: auto; }
+    </style>
+</head>
+<body>
+    <h1>E-Commerce Application Debug Tests</h1>
+
+    <div class="test">
+        <h2>Test 1: Backend Health Check</h2>
+        <button onclick="testBackend()">Test Backend</button>
+        <div id="backend-result"></div>
+    </div>
+
+    <div class="test">
+        <h2>Test 2: Admin Login (API Direct)</h2>
+        <button onclick="testAdminLoginDirect()">Test Admin Login</button>
+        <div id="admin-result"></div>
+    </div>
+
+    <div class="test">
+        <h2>Test 3: Customer Login (API Direct)</h2>
+        <button onclick="testCustomerLoginDirect()">Test Customer Login</button>
+        <div id="customer-result"></div>
+    </div>
+
+    <div class="test">
+        <h2>Test 4: CORS Check</h2>
+        <button onclick="testCORS()">Test CORS</button>
+        <div id="cors-result"></div>
+    </div>
+
+    <div class="test">
+        <h2>Test 5: Angular Frontend Status</h2>
+        <p>Frontend URL: <a href="http://localhost:4200" target="_blank">http://localhost:4200</a></p>
+        <button onclick="testFrontend()">Check Frontend</button>
+        <div id="frontend-result"></div>
+    </div>
+
+    <script>
+        const API_URL = 'http://localhost:8080/api/v1';
+
+        async function testBackend() {
+            const resultDiv = document.getElementById('backend-result');
+            resultDiv.innerHTML = '<p>Testing...</p>';
+
+            try {
+                const response = await fetch(`${API_URL}/products`);
+                const data = await response.json();
+
+                if (response.ok && data.data && data.data.length > 0) {
+                    resultDiv.innerHTML = `
+                        <p class="success">✅ Backend is running!</p>
+                        <p>Found ${data.total} products</p>
+                        <pre>${JSON.stringify(data.data[0], null, 2)}</pre>
+                    `;
+                } else {
+                    resultDiv.innerHTML = `<p class="error">❌ Backend responded but no data</p>`;
+                }
+            } catch (error) {
+                resultDiv.innerHTML = `<p class="error">❌ Backend connection failed: ${error.message}</p>`;
+            }
+        }
+
+        async function testAdminLoginDirect() {
+            await testLogin('admin@test.com', 'Test123456789!', 'admin-result');
+        }
+
+        async function testCustomerLoginDirect() {
+            await testLogin('customer@test.com', 'Test123456789!', 'customer-result');
+        }
+
+        async function testLogin(email, password, resultDivId) {
+            const resultDiv = document.getElementById(resultDivId);
+            resultDiv.innerHTML = '<p>Testing login...</p>';
+
+            try {
+                const response = await fetch(`${API_URL}/auth/login`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({ email, password })
+                });
+
+                const data = await response.json();
+
+                if (response.ok && data.accessToken) {
+                    resultDiv.innerHTML = `
+                        <p class="success">✅ Login successful!</p>
+                        <p><strong>User:</strong> ${data.user.name} (${data.user.role})</p>
+                        <p><strong>Email:</strong> ${data.user.email}</p>
+                        <p><strong>Token:</strong> ${data.accessToken.substring(0, 50)}...</p>
+                    `;
+                } else {
+                    resultDiv.innerHTML = `
+                        <p class="error">❌ Login failed</p>
+                        <pre>${JSON.stringify(data, null, 2)}</pre>
+                    `;
+                }
+            } catch (error) {
+                resultDiv.innerHTML = `
+                    <p class="error">❌ Login error: ${error.message}</p>
+                    <p>This could be a CORS issue or network error.</p>
+                `;
+            }
+        }
+
+        async function testCORS() {
+            const resultDiv = document.getElementById('cors-result');
+            resultDiv.innerHTML = '<p>Testing CORS...</p>';
+
+            try {
+                const response = await fetch(`${API_URL}/auth/login`, {
+                    method: 'OPTIONS',
+                    headers: {
+                        'Origin': 'http://localhost:4200',
+                        'Access-Control-Request-Method': 'POST',
+                        'Access-Control-Request-Headers': 'content-type'
+                    }
+                });
+
+                const allowOrigin = response.headers.get('Access-Control-Allow-Origin');
+                const allowMethods = response.headers.get('Access-Control-Allow-Methods');
+                const allowHeaders = response.headers.get('Access-Control-Allow-Headers');
+
+                if (allowOrigin === 'http://localhost:4200') {
+                    resultDiv.innerHTML = `
+                        <p class="success">✅ CORS is properly configured!</p>
+                        <p><strong>Allow-Origin:</strong> ${allowOrigin}</p>
+                        <p><strong>Allow-Methods:</strong> ${allowMethods}</p>
+                        <p><strong>Allow-Headers:</strong> ${allowHeaders}</p>
+                    `;
+                } else {
+                    resultDiv.innerHTML = `
+                        <p class="error">❌ CORS issue detected</p>
+                        <p><strong>Allow-Origin:</strong> ${allowOrigin || 'Not set'}</p>
+                    `;
+                }
+            } catch (error) {
+                resultDiv.innerHTML = `<p class="error">❌ CORS test failed: ${error.message}</p>`;
+            }
+        }
+
+        async function testFrontend() {
+            const resultDiv = document.getElementById('frontend-result');
+            resultDiv.innerHTML = '<p>Testing...</p>';
+
+            try {
+                const response = await fetch('http://localhost:4200');
+                const html = await response.text();
+
+                if (response.ok && html.includes('E-Commerce')) {
+                    resultDiv.innerHTML = `
+                        <p class="success">✅ Frontend is running!</p>
+                        <p>Angular app is accessible at <a href="http://localhost:4200" target="_blank">http://localhost:4200</a></p>
+                    `;
+                } else {
+                    resultDiv.innerHTML = `<p class="error">❌ Frontend responded but content is unexpected</p>`;
+                }
+            } catch (error) {
+                resultDiv.innerHTML = `<p class="error">❌ Frontend connection failed: ${error.message}</p>`;
+            }
+        }
+
+        // Auto-run all tests on load
+        window.addEventListener('load', () => {
+            setTimeout(() => {
+                testBackend();
+                testCORS();
+                testFrontend();
+            }, 500);
+        });
+    </script>
+</body>
+</html>
